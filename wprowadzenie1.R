@@ -14,8 +14,10 @@ length(tez.wektor)
 ##  https://www.forbes.com/billionaires/
 ## Wektors napisów (character vector)
 
-milioner <- c('Jeff Bezos', 'Bill Gates', 'Bernard Arnault', 'Warren Buffett', 'Larry Ellison',
-"Amancio Ortega", "Mark Zuckerberg", "Jim Walton", "Alice Walton", "Rob Walton")
+milioner <- c('Jeff Bezos', 'Bill Gates', 'Bernard Arnault', 'Warren Buffett', 
+              'Larry Ellison',
+"Amancio Ortega", 
+"Mark Zuckerberg", "Jim Walton", "Alice Walton", "Rob Walton")
 
 ## numeric vectors
 ## majątek = wealth
