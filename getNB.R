@@ -1,6 +1,7 @@
 ## --R--
 library("dplyr")
-nl0 <- read.csv("https://api.nobelprize.org/2.1/laureates?format=csv&limit=1200", header=T)
+nl0 <- read.csv("https://api.nobelprize.org/2.1/laureates?format=csv&limit=1360",
+                header=T)
 
 nrow(nl0)
 
