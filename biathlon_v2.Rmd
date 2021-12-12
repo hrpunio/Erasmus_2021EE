@@ -1,0 +1,94 @@
+---
+title: 'Attractiveness vs performance'
+author:
+- name: Tomasz Przechlewski
+  email: t.plata-przechlewski@psw.kwidzyn.edu.pl
+  affiliation: Powiślańska Szkoła Wyższa (Kwidzyn/Poland)
+date: "Dec. 2021"
+output:
+  html_document:
+    includes:
+      before_body: misc_hdr.html
+description: (c) Tomasz Przechlewski / CC-BY license
+---
+
+```{r setup, include=FALSE}
+library("dplyr")
+library("tidyr")
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# The problem
+
+The data from the
+*Attractiveness is positively related to World Cup performance in male, but not female, biathletes*
+(https://academic.oup.com/beheco/article/30/5/1436/5525079)
+
+
+Read the data (available from datadryad, cf 
+ https://datadryad.org/search?utf8=%E2%9C%93&q=attractiveness+performance):
+
+```{r}
+b0 <- read.csv("biathlonDATA.csv", sep = ';',  header=T, na.string="NA" )
+n0 <- nrow(b0)
+```
+
+Variables (some variables omitted):
+
+* raterID: anonymous identifier for opposite-sex rater
+* attractiveness: attractiveness rating on a scale on a scale from 1 (very unattractive) to 7 (very attractive)
+* targetID: anonymous identifier for biathlete
+* sex: biathlete's sex
+* ethnicity: biathlete's ethnicity (coded as Cauc = Caucasian, nonCauc = non-Caucasian)
+* zAge: biathlete's standardised age (z-score method)
+* zHeight: biathlete's standardised height (z-score method)
+* zBMI: biathlete's standardised body mass index (z-score method)
+* zWCptsPB: biathletes' standardised career-best World Cup points score (z-score method)
+* zAttractiveness: biathlete's standardised attractiveness rating (z-score method)
+* meanAthlAttr: biathlete's mean standardised attractiveness rating (z-score method)
+
+There are (`r n0`) observations
+
+We transform the data: attractiveness is a sum of all ratings and the
+other values are simply copied:
+
+```{r}
+b <- b0 %>% select (attractiveness, targetID, 
+                    sex, ethnicity, zAge, zHeight, zBMI, zWCptsPB) %>%
+  group_by(targetID) %>%
+  summarise (att = sum(attractiveness, na.rm=T),
+             id = first(targetID),
+             sex = first(sex),
+             eth=first(ethnicity),
+             age = first(zAge),
+             ht = first(zHeight),
+             bmi = first(zBMI),
+             p = first(zWCptsPB))
+```
+
+Check  the result:
+
+```{r}
+summary(b)
+```
+
+## Attractiveness vs Performance
+
+```{r}
+model1 <- lm(p ~ att, data = b)
+summary(model1)
+
+model2 <- lm(p ~ att + sex, data = b)
+summary(model2)
+
+model3 <- lm(p ~ age + eth, data = b)
+summary(model3)
+
+```
+
+## Data banks
+
+https://figshare.com/ (https://en.wikipedia.org/wiki/Figshare)
+
+https://datadryad.org/ ( https://en.wikipedia.org/wiki/Dryad )
+
