@@ -1,0 +1,211 @@
+---
+title: 'Tools and databases'
+author:
+- name: Tomasz Przechlewski
+  email: t.plata-przechlewski@psw.kwidzyn.edu.pl
+  affiliation: Powiślańska Szkoła Wyższa (Kwidzyn/Poland)
+date: "Dec. 2021"
+output:
+  html_document:
+    includes:
+      before_body: misc_hdr.html
+description: (c) Tomasz Przechlewski / CC-BY license
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Databases
+
+### Eurostat database explained
+
+Source data is available in
+https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing/
+
+There three  directories:
+
+```
+data dict metadata
+```
+
+Approximately 6300 datasets and tables in two formats tsv/sdmx in most
+files rows are time series first row contains header
+
+Tables: two/three-dimensional 'tables by themes'. Most important data.
+secondary data
+
+Database:  multidimensional tables 'database by theme'
+
+Tables/Database organized into (multinomial) taxonomy with 9 top nodes:
+
+General and regional; Economy and finance; Population and social
+conditions; Industry, trade and services; Agriculture, forestry and
+fisheries; International trade; Transport; Environment and energy;
+Science technology, digital society
+
+First cell: coma-separated sequence of **codes** (data dimensions
+used for identification) followed by / and **seqcode**
+
+For each of **codes** there is a file in the dic directory
+Seqcode denotes the dimension of the sequence of values (time for time-series,
+geo for geographicsl series)
+
+Complete list of code files (dic files) can
+be found in dim1st.dic
+
+Time dimension: YYYmNN, where 00 yearly, SS semi-annual, QQ --
+quarterly, MM -- onthly
+
+Columns 1st line (except 1st): coma-separated sequence of **codes**
+
+Flags are attached to values separated by a blank (space)
+If there is no flag the value is followed by a blank (in effect the value cell is
+composed de facto of two entities: value and flag (usually empty).)
+
+Decimal symbols used: dot
+
+Toc files:
+https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?sort=1&file=table_of_contents_en.pdf
+
+Contains table/database id (called code), title, link to data in tsv/zip format
+
+Example (tourism)
+
+Reference metadata including Euro-SDMX metadata structure
+https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing/metadata
+https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/
+
+Table of contents in three languages and three formats (xml/txt/pdf)
+
+Programmatical download is possible with JSON/SDMX directly or through
+specialized packages (ie R)
+
+```
++Regional statistics by NUTS classification (reg)
++-+ Regional demographic statistics (reg_dem)
+  +-+ Population and area (reg_dempoar)
+```
+
+Population on 1 January by age, sex and NUTS 2 region (demo_r_d2jan)
+https://appsso.eurostat.ec.europa.eu/nui/show.do?dataset=demo_r_d2jan&lang=en
+https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_d2jan.tsv.gz
+
+Area by NUTS 3 region (demo_r_d3area)
+https://appsso.eurostat.ec.europa.eu/nui/show.do?dataset=demo_r_d3area&lang=en
+https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_d3area.tsv.gz
+
+Population density by NUTS 3 region (demo_r_d3dens)
+https://appsso.eurostat.ec.europa.eu/nui/show.do?dataset=demo_r_d3dens&lang=en
+https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_d3dens.tsv.gz
+
+Population on 1 January by age group, sex and NUTS 2 region (demo_r_pjangroup)
+https://appsso.eurostat.ec.europa.eu/nui/show.do?dataset=demo_r_pjangroup&lang=en
+https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_pjangroup.tsv.gz
+
+Population on 1 January by age group, sex and NUTS 3 region (demo_r_pjangrp3)
+https://appsso.eurostat.ec.europa.eu/nui/show.do?dataset=demo_r_pjanind3&lang=en
+https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_pjanind3.tsv.gz
+
+```
++Regional statistics by NUTS classification (reg)
++-+ Regional demographic statistics (reg_dem)
+  +-+ Fertility (reg_demfer)
+```
+
+Fertility rates by age and NUTS 2 region[demo_r_frate2]
+Last update: 28-02-2020	
+https://appsso.eurostat.ec.europa.eu/nui/show.do?dataset=demo_r_frate2&lang=en
+https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_frate2.tsv.gz
+
+```
++Regional statistics by NUTS classification (reg)
++-+ Regional tourism statistics (reg_tour)
+  +-+ Occupancy in collective accommodation establishments: domestic and inbound tourism (reg_tour_occ)
+```
+
+Nights spent at tourist accommodation establishments by NUTS 2 regions[tour_occ_nin2]
+Last update: 24-02-2020	
+https://appsso.eurostat.ec.europa.eu/nui/show.do?dataset=tour_occ_nin2&lang=en
+https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/tour_occ_nin2.tsv.gz
+
+```
++Regional statistics by NUTS classification (reg)
++-+ Regional labour market statistics (reg_lmk)
+  +-+ Regional unemployment - LFS annual series (lfst_r_lfu)
+```
+ 
+Unemployment by sex, age and NUTS 2 regions (1 000) (lfst_r_lfu3pers)
+https://appsso.eurostat.ec.europa.eu/nui/show.do?dataset=lfst_r_lfu3pers&lang=en
+https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/lfst_r_lfu3pers.tsv.gz
+
+```
++Environment and energy	
++-+ Environment (env)	
+  +-+ Emissions of greenhouse gases and air pollutants (env_air)	
+    +-+ Air emissions accounts (env_air_aa)	
+```
+
+Air emissions accounts by NACE Rev. 2 activity (env_ac_ainah_r2)
+https://appsso.eurostat.ec.europa.eu/nui/show.do?dataset=env_ac_ainah_r2&lang=en
+https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/env_ac_ainah_r2.tsv.gz
+
+Greenhouse gas emissions by source sector (source: EEA) (env_air_gge)	 
+https://appsso.eurostat.ec.europa.eu/nui/show.do?dataset=env_air_gge&lang=en
+https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/env_air_gge.tsv.gz
+
+```
++-+ Energy (t_nrg)	
+  +-+Sustainable Development indicators Goal 7 - Affordable and clean energy (t_nrg_sdg_07)	
+```
+
+Primary energy consumption (sdg_07_10)	 
+https://ec.europa.eu/eurostat/databrowser/view/sdg_07_10/default/table?lang=en
+https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/sdg_07_10.tsv.gz
+
+
+### Polish Statistical Office
+
+BDL, BDM and SWAiD databases:
+
+* BDL is an abbreviation from bank danych lokalnych (local data bank)
+https://bdl.stat.gov.pl/BDL/start
+
+* BDM is an abbreviation for bank danych makroekonomicznych (macroeconomic data bank)
+https://bdm.stat.gov.pl/
+
+* Platforma Analityczna SWAiD -- Dziedzinowe Bazy Wiedzy  (domain databases)
+https://stat.gov.pl/banki-i-bazy-danych/platforma-analityczna-swaid-dziedzinowe-bazy-wiedzy/
+
+
+## Metabases
+
+DB.nomics https://db.nomics.world/
+
+### Other databases
+
+* WHO database
+https://www.who.int/data/gho/indicator-metadata-registry
+https://www.who.int/data/gho/data/themes
+https://www.odata.org/documentation/odata-version-2-0/uri-conventions/ (API)
+
+* FAO database http://www.fao.org/faostat/en/#home
+
+* Ourworldindata https://ourworldindata.org/
+
+## Tools
+
+* Spreadsheets https://pl.libreoffice.org/ or google spreadheet
+
+* Packages STATA, SPSS, SAS, eviews
+
+* R/Rstudio https://www.rstudio.com/
+
+(see also https://pl.wikipedia.org/wiki/R-Studio
+https://mran.microsoft.com/open )
+
+* github
+
+* Open publishing platforms RPubs and https://bookdown.org/
+
+
