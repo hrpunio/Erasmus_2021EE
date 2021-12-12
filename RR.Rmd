@@ -151,16 +151,18 @@ held by a group of people.
 
 Many incl. costs and learning curve
 
-### LSP: Tools
+### LSP workflow
 
-* Document formatting language: LaTeX (not recommended) or Markdown (or
-many others, ie. orgmode).  LaTeX is a word processor/a document
-markup language.  Markdown: lightweight document markup language based
-on email text formatting. Easy to write, read and publish as-is.
+* **Document formatting language**:  Markdown (lightweight document markup language based
+on email text formatting. Easy to write, read and publish as-is.)
+https://docs.microsoft.com/ru-ru/contribute/markdown-reference
 
-* Program language: R (or Python)
+* **Dedicated Program language**: R
+https://cran.r-project.org/
 
-* Frontends: RStudio
+* **Tool to process 1 and 2**: RStudio
+https://www.rstudio.com/
+
 
 ## Github for the uninitiated
 
