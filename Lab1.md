@@ -43,4 +43,7 @@ https://github.com/hrpunio/Erasmus_2021EE
 
 * https://bookdown.org/machar1991/ITER/
 
+* https://www.econometrics-with-r.org/ittsraf.html
+
 * https://bookdown.org/home/tags/econometrics/
+
