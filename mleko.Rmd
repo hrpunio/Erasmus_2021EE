@@ -1,0 +1,269 @@
+---
+title: "Milk production"
+author: "TP"
+date: "2022-01-01"
+output:
+   html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The aim is to forecast the monthly volume of milk production in Poland.
+The source of the data is the Statistical Bulletin of the Central Statistical Office 10/2020;
+https://stat.gov.pl/obszary-tematyczne/inne-opracowania/)
+
+We use `forecast`/`fpp2` R packages (in version 8.13 or higher)
+
+
+```{r echo=T}
+library ("forecast")
+library ("fpp2")
+
+## show versions
+sessionInfo()
+```
+
+The `milk.csv` file contains monthly data on milk production in Poland 
+(January 2010--October 2020; table 47: purchase of major agricultural
+products; https://stat.gov.pl/obszary-tematyczne/inne-opracowania/)
+
+
+```{r echo=T}
+## load data from csv / covert to TS 
+t <- read.csv("mleko.csv", dec=",", sep = ';',  header=T, na.string="NA");
+t <-ts(t, start=c(2010, 1), frequency=12)
+## check last observation, should be 2020/10
+end(t)
+```
+
+Visual recognition of the nature of the forecasted phenomenon (is the data complete,
+whether there are any atypical observations. Is there a trend and seasonality.)
+
+```{r echo=F}
+## Try some of these
+##  plot(t)
+##  autoplot(t) 
+##  ggtsdisplay(t, smooth = T)
+autoplot(t, facets = TRUE) + geom_smooth()
+```
+
+Analyzing the chart, we can see clear seasonal fluctuations and a trend.
+There are no missing data, unusual observations or trend breaks.
+Another two charts
+allow for a more accurate assessment of the seasonality and trend:
+
+```{r echo=F}
+ggseasonplot(t)
+autoplot(decompose(t) )
+```
+
+The volume of milk purchases drops in winter and is the highest in the
+months of May--July. The last chart clearly shows that  seasonality
+of production
+is additive (constant amplitude of fluctuations) and the
+trend is close to linear
+
+```{r echo=F}
+## Ad 4/ statystyki zbiorcze
+t.mean <- mean(t, na.rm = T)
+t.max <- max(t, na.rm = T)
+t.min <- min(t, na.rm = T)
+#t.mean
+#t.max
+#t.min
+```
+
+In the period analyzed, the average milk production was `r t.mean` (minimum value` r t.min`; value
+maximum `r t.max`)
+
+## Prognostic assumptions
+
+The **purchaser of the forecast** requested a forecast for 6 months.
+Therefore, the length of the test set is set for a period of 6 months.
+
+
+```{r echo=F}
+## Test/train set 
+## use window or (better)  head/tail
+## tl <- head(t, round(length(t) * 0.8))
+## h <- 99
+## albo tl <- head(t, length(t) - h)
+## tt <- tail(t, h)
+hmax <- 6
+
+tl <- head (t, length(t) -hmax)
+tt <- tail (t, hmax)
+cat ("End of train set:", end(tl))
+cat ("End of test set:", start(tt))
+```
+
+## Linear trend forecasting
+
+### Model estimation
+
+```{r echo=F}
+## 1. Modelu fit/summary
+##    Assessing R2/RMSE/MAPE
+m_lm <- tslm(tl ~ trend + season )
+summary(m_lm)
+accuracy(m_lm)
+```
+
+Evaluation of residuals
+
+```{r echo=F}
+checkresiduals(m_lm)
+res_lm <- m_lm$residuals
+```
+
+```{r echo=F}
+m_lm.fitted <- m_lm$fitted.values
+autoplot(m_lm.fitted, series="teoret") +  autolayer(m_lm$x, series="empir")
+# p > 0.05 świadczy o autokorelacji
+Box.test(res_lm, type='Ljung-Box')
+```
+
+Conclusions: The model fits the data well (R> 90?) But it exists
+autocorrelation of the random term.
+
+Now we compute forecasts for next 6 months and compare with test set values:
+
+
+```{r echo=F}
+m_lmf <- forecast(m_lm, h=hmax)
+autoplot(m_lmf)
+m_mla <- accuracy(m_lmf, tt)
+m_mla
+```
+
+## Forecasting with exponential smoothing
+
+### Model estimation
+
+```{r echo=F}
+m_es  <- ets(tl)
+summary(m_es)
+accuracy(m_es)
+```
+
+Evaluation of residuals
+
+```{r echo=F}
+checkresiduals(m_es)
+res_es <- m_es$residuals
+
+m_es.fitted <- m_es$fitted
+autoplot(m_es.fitted, series="teoret") +  autolayer(m_es$x, series="empir")
+
+Box.test(res_es, type='Ljung-Box')
+```
+
+Now we compute forecasts for next 6 months and compare with test set values:
+
+```{r echo=F}
+m_esf <- forecast(m_es, h=hmax)
+autoplot(m_esf)
+m_esa <- accuracy(m_esf, tt)
+m_esa
+```
+
+Conclusions:
+
+## Arima
+
+Model
+
+```{r echo=F}
+m_aa  <- auto.arima(tl)
+summary(m_aa)
+accuracy(m_aa)
+```
+
+Evaluation of residuals
+
+```{r echo=F}
+checkresiduals(m_aa)
+res_aa <- m_aa$residuals
+
+m_aa.fitted <- m_aa$fitted
+autoplot(m_aa.fitted, series="teoret") +  autolayer(m_aa$x, series="empir")
+
+Box.test(res_aa, type='Ljung-Box')
+```
+
+Now we compute forecasts for next 6 months and compare with test set values:
+
+```{r echo=F}
+m_aaf <- forecast(m_aa, h=hmax)
+autoplot(m_aaf)
+m_aaa <- accuracy(m_aaf, tt)
+m_aaa
+```
+
+Conclusions
+
+## Comparison of forecasts
+
+As the series shows a trend and seasonality, we will compare the results
+for *naive* snaive (seasonality) and rwf (trend) models
+
+```{r echo=F}
+m_sn  <- snaive(tl)
+res_sn <- m_sn$residuals
+m_sn.fitted <- m_sn$fitted
+m_snf <- forecast(m_sn, h=hmax)
+m_sna <- accuracy(m_snf, tt)
+m_sna
+
+m_rwf  <- rwf(tl)
+res_rwd <- m_rwf$residuals
+m_rwf.fitted <- m_rwf$fitted
+m_rwff <- forecast(m_rwf, h=hmax)
+m_rwfa <- accuracy(m_rwff, tt)
+m_rwfa
+```
+
+Summary of fit scores (ordered by RMSE):
+
+```{r echo=F}
+## Najniższa wartość RMSE / MAPE w zbiorze testowym
+## Poniższe przepisujemy po prostu
+A.table <- rbind( m_mla,  m_esa, m_aaa, m_sna, m_rwfa)
+row.names(A.table) <- c('lm', 'lm/t', 'es', 'es/t', 'arima', 'arima/t', 'sna', 'sna/t', 'rwf', 'ref/t')
+A.table <- as.data.frame(A.table)
+A.table <- A.table[order(A.table$RMSE),]
+A.table
+```
+
+Using the lowest RMSE/MAPE value in the test file as the criterion
+we choose the ARIMA model as the best predictor of milk purchase
+
+Compare the forecasting results in the chart:
+
+
+```{r echo=F}
+autoplot(t, series="empir") +  
+  autolayer(m_lmf$mean, series="ln") +
+  autolayer(m_esf$mean, series="es") +
+  autolayer(m_aaf$mean, series="aa") +
+  autolayer(m_snf$mean, series="sn") +
+  autolayer(m_rwf$mean, series="rwf")
+ ```
+
+ More detailed chart:
+ 
+ ```{r echo=F}
+## tylko zbiór testowy 
+autoplot(tt, series="empir") +  
+  autolayer(m_lmf$mean, series="ln") +
+  autolayer(m_esf$mean, series="es") +
+  autolayer(m_aaf$mean, series="aa")
+```
+
+All forecasts are systematically overestimated. Perhaps
+this is due to the extraordinary decline
+in purchasing related to the COVID19 pandemic.
+
+

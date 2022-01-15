@@ -1,0 +1,411 @@
+---
+title: "Regressing cross-sectional data"
+author: "TP"
+date: "01/01/2022"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F)
+```
+
+## Introduction
+
+```{r, message=F, warning=F, echo=F}
+library("tidyverse") #
+##install.packages("caret")
+library("caret")
+load ("marketing.rda")
+```
+
+`marketing.rda` contains data on advertising budgets
+for youtube, facebook and 
+newspapers (thousand USD) + sales (thousand units). 
+
+Divide data into training and test sets
+ 
+```{r}
+training.samples <- marketing$sales %>%
+  createDataPartition(p=0.8, list = F)
+
+train.data <- marketing[training.samples, ]
+test.data <- marketing[ -training.samples, ]
+```
+
+Plot
+
+```{r}
+## library("ggplot2")
+plot(train.data)
+
+## Not working :-(
+##autoplot(train.data)
+```
+
+Comments here...
+
+
+Simple regression (We use LaTeX syntax 
+for composite math equations; https://en.wikipedia.org/wiki/LaTeX):
+
+$$y = a + b \cdot x + \epsilon$$
+
+`lm` **function** 1st *argument* is called 'formula argument' and specifies
+the model.  `~` sign separates the dependent variables with
+explanatory/independent (left) variables (right).
+
+Variable on the left side of the sign is the response variable and on
+the right are explanatory variables.
+
+`+` var adds variable while `-` var removes variable
+`1` means intrecept (included by default)
+
+```{r}
+model1 <- lm(sales ~ youtube, data = train.data)
+
+# components of lm model (formally R `object`):
+namesx(model1)
+```
+
+Summary statistics of the model are provided with the summary function
+in R. With summary statistics, we can assess (among other things) the
+prediction accuracy of model.
+
+```{r}
+summary(model1)
+```
+
+* Call: model specification
+
+* Residuals: distribution of residuals
+
+* Coefficients: estimated coefficients, their standard values, t-values and probabilities
+
+
+Residual standard error:  $\sqrt { RSS/DF }$; Residual sum of squares
+$RSS = \sum ( y - \hat y)^2$
+
+$DF = n - k$  where $k$ denotes number of independent variables 
++ intercept (or $n - k - 1$ if k means independent variables w/o intercept;
+anyway DF means number of parameters in the model to estimate)
+
+Distribution of residuals in theory should be normal with mean 0
+
+Multiple R-squared: coefficient of determination
+(*współczynnik determinacji* in polish); $R^2$
+the proportion of the variation that is explained by the regression line
+(ESS) to total variation (TSS): ie
+
+$$R^2 = ESS/TSS = \sum (\hat y - \bar y)^ / \sum (y - \bar y)^2$$
+
+BTW $R^2$ is also squared correlation between $y$ and $\hat y$
+
+BTW2 $\bar y = \bar{\hat y}$ (property of regression line)
+
+Adjusted $R^2 = (1- R^2)\times (n-1)/(n- k -1)$
+ 
+$F$-statistic test the hypothesis $H_0:$ all coefficients are equal to 0
+(except for the intercept); The distribution of $F(k -1, n - k)$
+for small probability $H_0$ should be rejected
+
+```{r}
+## residuals
+residuals(model1)
+## fitted values
+fitted(model1)
+##
+coefficients(model1)["youtube"]
+
+## or
+confint(model1)
+b.est <- coefficients(model1)["youtube"]
+a.est <- coefficients(model1)["(Intercept)"]
+```
+
+The equation is: sales =  
+`r a.est` + `r b.est` youtube. So unit
+increase in advertising on youtube results 
+in `r b.est` increase/change in sales.
+
+Default plot (2nd argument indicates type of plot; 1 -- residuals vs fitted):
+
+```{r}
+## which=3
+plot (model1, which=1)
+```
+
+More elaborate plots with `ggplot2`:
+
+```{r}
+library("ggplot2")
+library('ggfortify')
+# install.packages('ggfortify')
+autoplot(model1)
+```
+
+Influential values
+
+```{r}
+plot (model1,which=4)
+```
+
+The main package for specification testing of linear regressions in R is the `lmtest` package.
+
+Testing for heteroskedasticity in R can be done with the `bptest` function
+
+By default (using a regression object as an argument) `bptest` performs the 
+(generalized) Breusch-Pagan test:
+
+```{r, message=FALSE}
+library("lmtest")
+bptest(model1)
+```
+
+Since the $p$-value is not less than 0.05, 
+we fail to reject the null hypothesis. There is no  heteroscedasticity 
+in data.
+
+The Ramsey RESET Test tests functional form by evaluating if higher order terms have any explanatory value:
+
+```{r}
+resettest(model1)
+```
+
+Low $p$ indicates functional form misspecification.
+
+Testing for autocorrelation: Breusch-Godfrey test.
+$H_0$: There is no autocorrelation at any order less than or equal to $p$.
+
+```{r}
+bgtest(model1)
+```
+
+If $p$-value is less than 0.05, we can reject the null hypothesis and conclude that the residuals in the regression model are autocorrelated.
+
+
+Autocorrelation: **Durbin Watson test for autocorrelation**
+examines whether residuals are autocorrelated with themselves. 
+The $H_0$ states that residuals are not autocorrelated. 
+This test could be especially useful when you conduct a multiple 
+(times series) regression.
+
+```{r, message=F}
+dwtest(model1)
+##  or
+#library("car")
+#durbinWatsonTest(model1)
+```
+
+
+If $p$-value is less than 0.05, we can reject the null hypothesis and conclude that the residuals in the regression model are autocorrelated.
+
+
+**Multicollinearity**. VIFs exceeding 4 warrant further investigation,
+while VIFs exceeding 10 are signs of serious multicollinearity
+requiring correction.
+
+```{r}
+## Not appropriate for model with 1 regressor
+##vif(model1)
+```
+
+Anyway VIFs exceeding 4 are suspicious 
+while VIFs exceeding 10 
+are signs of serious multicollinearity requiring correction
+
+### Predictions
+
+```{r}
+predictions1 <- predict(model1, test.data )
+
+predictions1
+
+plot(sales ~ youtube, data = train.data )
+ points (predictions1 ~ test.data$youtube, col='blue')
+ lines (predictions1 ~ test.data$youtube, col='red')
+```
+
+## Multiple regression
+
+Add facebook as 2nd regressor:
+
+```{r}
+model2 <- lm(sales ~ youtube + facebook, data=train.data)
+
+summary(model2)
+
+## multicollinearity
+library("car")
+vif(model2)
+
+## correlation matrix
+
+corMatrix <- cor(train.data)
+corMatrix
+
+##
+library(corrplot)
+corrplot(corMatrix, method = 'number')
+corrplot(corMatrix, method = 'color', order = 'alphabet')
+```
+
+### Model comparison/selection
+
+The anova function compares nested models.  Where we are dealing with
+regression models, then we apply the F-Test and where we are dealing
+with logistic regression models, then we apply the Chi-Square Test.
+
+By nested, we mean that the independent variables of the simple model
+will be a subset of the more complex model.  Note that we should fit
+the models on the same dataset.
+
+We test if we should include facebook or not:
+
+```{r}
+anova(model2, model1, test="F") 
+```
+
+We should prefer m.model
+
+```{r}
+model3 <- lm(sales ~ youtube + facebook + newspaper, data=train.data)
+summary(model3)
+
+## already tested
+##anova(model2, model1, test="F") 
+
+anova(model3, model2, model1, test="F") 
+```
+
+## Multiple regression (another example)
+
+```{r, message=F}
+library("AER")
+data("CPS1988")
+
+str(CPS1988)
+summary(CPS1988)
+## data.frame:	28155 obs. of  7 variables:
+## wage      : num  355 123 370 755 594 ...
+## education : int  7 12 9 11 12 16 8 12 12 14 ...
+## experience: int  45 1 9 46 36 22 51 34 0 18 ...
+## ethnicity : Factor w/ 2 levels "cauc","afam": 1 1 1 1 1 1 1 1 1 1 ...
+## smsa      : Factor w/ 2 levels "no","yes": 2 2 2 2 2 2 2 2 2 2 ...
+## region    : Factor w/ 4 levels "northeast","midwest",..: 1 1 1 1 1 1 1 1 1 1 ...
+## parttime  : Factor w/ 2 levels "no","yes": 1 2 1 1 1 1 1 1 1 1 ...
+```
+
+Inspect some correlations 
+
+```{r}
+## use dplyr
+## https://cran.r-project.org/web/packages/corrplot/vignettes/corrplot-intro.html
+corMatrix <- CPS1988 %>% select (wage, education, experience) %>% cor()
+## wage $$ / week
+## education and experience are measured in years
+## ethnicity: factor
+
+corMatrix
+
+corrplot(corMatrix, method = 'color', order = 'alphabet')
+corrplot(corMatrix, method = 'number')
+```
+
+## Categorical variables
+
+Ethnicity is categorical
+
+```{r}
+levels(CPS1988$ethnicity)
+
+## Parttime
+levels(CPS1988$parttime)
+## this is pretty big
+nrow(CPS1988)
+
+## later
+##plot(CPS1988)
+##
+```
+
+The model
+
+```{r}
+model3w <- lm ( log(wage) ~ experience + I(experience^2) + education + ethnicity,
+               data = CPS1988 )
+```
+
+NOTE: Inside formula `+`,`*`, `/`,and `^` has special meaning
+If one has to specify `x^2` one has to use `I()` function as in the example above
+
+```{r}
+summary(model3w)
+```
+
+`Ethnicityafam` means `afam` is `1` and `cauc` 
+is `0` so negative coefficient
+can be interpreted as difference between (`log`) wage between afam (1)
+and cauc(0)
+
+In R factors are handled as (set) of dychotomous variables
+automatically If factor contains more than 2 levels, $l-1$ dychotomous
+variables will be created
+
+```{r}
+## Simpler model w/o ethnicity
+model3a <- lm ( log(wage) ~ experience + I(experience^2) + education,
+               data = CPS1988 )
+summary(model3a)
+```
+
+BTW Setting reference groups for factors:
+ he first level of the factor is treated as the omitted reference group.
+ Use the `relevel()` function to change.
+
+Note: models are 'nested'
+
+```{r}
+anova(model3a, model3w)
+```
+
+Akaike information criterion (AIC) is a metric that is used to compare
+the fit of several regression models smaller AIC = model is a better fit
+
+```{r}
+AIC(model3a, model3w)
+```
+
+Ehnicity is significant at any reasonable level
+
+## Categorical variables with more than two levels
+
+Nine-month academic salary of academic staff in US (libary `car`)
+
+```{r}
+library("car")
+head(Salaries, n=9)
+model.9 <- lm(salary ~ yrs.service + rank + discipline + sex, data=Salaries)
+summary(model.9)
+
+anova(model.9)
+```
+
+### Interactions
+
+```{r}
+model3b <- lm ( log(wage) ~ experience + I(experience^2) + education*ethnicity,
+                data = CPS1988 )
+summary(model3b)
+anova(model3b, model3w)
+```
+
+Interaction  education*ethnicity is significant at any reasonable level
+
+## References
+
+https://www.zeileis.org/teaching/AER/
+
+See also https://rpubs.com/dvallslanaquera/lm_cigarette

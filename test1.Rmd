@@ -1,0 +1,32 @@
+---
+title: 'Tabset example'
+author:
+- name: Tomasz Przechlewski
+  email: t.plata-przechlewski@psw.kwidzyn.edu.pl
+  affiliation: Powiślańska Szkoła Wyższa (Kwidzyn/Poland)
+date: "Jan. 2021"
+output:
+  html_document: default
+description: (c) Tomasz Przechlewski / CC-BY license
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Computation
+
+## Results {.tabset}
+
+### Tab One
+
+One
+
+### Tab Two
+
+Two
+
+## {-}
+
+
+continue ({-} means empty tabset) 

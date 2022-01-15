@@ -1,0 +1,498 @@
+---
+title: "Forecasting: very short introduction :-)"
+author: "TP"
+date: "01/01/2022"
+output: html_document
+   
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+We use `forecast` library and auxilliary `fpp` library
+There are two versions of forecast library: `forecast` and `fpp3`
+(https://otexts.com/fpp3/). 
+Below we use older one which is simpler.
+
+```{r, warning=FALSE, message=FALSE}
+library("forecast")
+library("fpp")
+```
+
+
+## Data input
+
+The data contains monthly number of visitors to Malbork castle 
+(largest castle in the world measured by land area and a UNESCO World Heritage Site; https://en.wikipedia.org/wiki/Malbork_Castle)
+
+
+![](./malbork_castle.jpg)
+
+Import CSV and convert to time-series:
+
+```{r}
+## Data input
+z0 <- read.csv("MZM.csv", dec=".", sep = ';',  header=T, na.string="NA");
+
+## What inside MZM.csv ?
+str(z0)
+
+## or in left/top window RStudio (Environment tab)
+##
+is.ts(z0)
+
+## convert column `razem' from frame `z' to time-series (object)
+## frequency monthly first element = 2015/1
+z <-ts(z0$razem, start=c(2015, 1), frequency=12)
+
+## check if z is of TS type
+is.ts(z)
+
+## check frequecy/start/end
+frequency(z)
+start(z)
+end(z)
+```
+
+We can convert numeric vectors to multi-dimensional TS object
+
+```{r}
+zz <-ts(matrix(c(z0$razem, z0$krajowi), 
+               dimnames = list(NULL, c('razem', 'krajowi')),
+               ncol=2, byrow = F), 
+        start=c(2015, 1), frequency=12)
+is.ts(zz)
+## vistors total
+## zz[,"razem"]
+```
+
+### plot/chart (basic):
+
+```{r}
+plot(z)
+```
+
+or with autoplot (from) ggplot library):
+
+```{r}
+library("ggplot2")
+
+autoplot(z) + ylab ("persons")
+
+autoplot(zz[,c("razem","krajowi")], facets=TRUE) + 
+  ylab("")
+```
+
+### seasonality plot:
+
+```{r}
+seasonplot(z, year.labels = TRUE, main="TITLE")
+
+## or better
+## ?ggseasonplot
+
+ggseasonplot(z ) + 
+  ylab("persons") +
+ggtitle("Malbork castle visitors")
+```
+
+### summary statistics
+
+```{r}
+summary(z)
+```
+
+### time-window from 4 month 2016
+
+```{r}
+# ?window
+z1 <- window (z, start=c(2016, 4))
+```
+
+## Time series decomposition
+
+**Trend** is a long-term increase or decrease in the data
+
+A **seasonal pattern** occurs when a time series is affected 
+by seasonal factors
+such as the time of the year or the day of the week.
+
+A **cycle occurs** when the data exhibit rises and falls that are not of a
+frequency (bussiness cycle)
+
+
+Additive model:
+
+$$TS = T + S + E$$
+
+or (multiplicative)
+
+$$TS = T \cdot S \cdot E$$
+In the first model the change is constant
+In the 2nd model the rate of change is constant.
+
+
+## Autocorrelation
+
+Measures the linear relationship between lagged values of a time series
+For example, $r_1$ measures the relationship between $y_t$ and $y_{t-1}$ , 
+$r_2$ measures the relationship between $y_t$ and $y_{t-2} , and so on.
+
+```{r}
+ggAcf(z)
+Acf(z)
+```
+
+## White noise
+
+Time series that show no autocorrelation are called white noise:
+
+
+```{r}
+set.seed(30)
+y <- ts(rnorm(50))
+autoplot(y) + ggtitle("White noise")
+
+ggAcf(y)
+```
+
+Rule of thumb:  for a white noise series, 
+we expect 95% of the spikes in the ACF to lie within
+$±2\sqrt{T}$ where $T$ is the length of the time series.
+These boundy lines are by default added to the plot.
+
+
+### Residual properties
+     
+* The residuals **should be uncorrelated** (otherwise they contain additional
+information so forecasting method is not optimal.)
+
+* The residuals have **zero mean** (no systematic error)
+
+* The residuals have constant variance
+
+* The residuals are normally distributed
+
+```{r}
+res <- residuals(naive(z))
+
+## plot (res, main='tytuł-wykresu', xlab='ośX', ylab='ośY')
+## or
+autoplot(res) + xlab("Day") + ylab("") +
+  ggtitle("Residuals from naïve method")
+
+## visual estimation of residuals
+## hist(res)
+gghistogram(res) + ggtitle("Histogram of residuals")
+
+## visual estimation of autocorrelation
+## Acf(res, main='...') or
+ggAcf(res) + ggtitle("ACF of residuals")
+
+## Box-Ljung test for AC, (high-values = no-AC):
+
+Box.test(res, type='Ljung-Box')
+
+```
+
+### Evaluating forecast accuracy
+
+The accuracy of forecasts can only be
+determined by considering how well a model performs on **new data** that were
+not used when fitting the model.
+
+It is common practice to separate the available data into
+two portions, **training set** and **test set**, 
+where the training data is used to estimate
+any parameters of a forecasting method 
+and the test data is used to evaluate its
+accuracy.
+
+The size of the test set is typically about 20% of the total sample, although this
+value depends on how long the sample is and how far ahead you want to
+forecast. The test set should ideally be at least as large as the maximum forecast
+horizon required.
+
+```{r}
+## training set
+z1 <- window (z, end=c(2018, 12))
+## test set
+z2 <- window (z, start=c(2019, 1))
+```
+
+
+* error is a difference between observed ($y_i$)
+    and forecast $\hat y_i$,  czyli $e_i = y_i - \hat y_i$ 
+    (BTW residual is a difference between observed and fitted value, ie.
+    concerns training set)
+
+* MSE -- *mean square error* (of residuals)
+
+* RMSE -- *root mean square error*
+     
+*  $p_i = e_i/y_i \cdot 100$
+     
+* MAPE ie  ($\sum p_i$)
+
+
+
+## Model evaluation
+
+* divide dataset into test set and training set
+
+* estimate several model
+
+* choose model with best fit
+
+* recompute with test set
+
+
+
+## Forecasting methods
+
+## Very simple methods 
+
+Used as benchmark
+
+* Average method ($\hat y = \bar y = (y_1 + ⋯ + y_T )/T$)
+
+```{r}
+h <- 4 ## one quarter ahead
+meanf(z1, h)
+```
+
+Naïve method $\hat y_{T + h|T} = y_T$ ($y_T$ is a last observation)
+
+```{r}
+##naive(y, h) or
+rwf(z1, h) # Equivalent alternative (random walk forecast)
+```
+
+* Seasonal naïve method
+
+* Drift  (last observation + average increase/decrease called drift)
+
+```{r}
+rwf(z1, h, drift=TRUE)
+
+autoplot(z1) +
+  autolayer(meanf(z1, h), series="Mean", PI=FALSE) +
+  autolayer(naive(z1, h), series="Naïve", PI=FALSE) +
+  autolayer(rwf(z1, h, drift=T), series="Drift", PI=FALSE) +
+ggtitle("Visitors in Malbork castle") +
+xlab("Year") + ylab("Persons") +
+guides(colour=guide_legend(title="Forecast"))
+
+```
+
+
+##  Linear regression model
+
+Zjawisko ma charakter liniowy. Prognozowanie polega na wyznaczeniu
+prostej najlepiej dopasowanej do danych. Jeżeli występuje trend
+zakłada się że amplituda wahań sezonowych jest stała (co do wartości bezwględnych (addytywne)lub
+względnych (multiplikatywne))
+
+```{r}
+## trend 
+fit.lm <- tslm(z1 ~ trend )
+## trend + sesonality
+fit.lm.s <- tslm(z1 ~ trend + season )
+
+## then
+summary(fit.lm)
+## or
+summary(fit.lm.s)
+# Compute forecast for next 3 months
+h3f <- forecast(fit.lm.s, h=3)
+#
+# Evaluating accuracy
+accuracy(h3f, z2)
+
+```
+
+## Simple exponential smoothing
+
+This method is suitable for forecasting data with
+no clear trend or seasonal pattern
+     
+```{r}
+## ses
+##fit <- ses(x, alpha=a, initial='simple', h=3) or
+fit.ses <- ses(z1, h )
+
+accuracy(fit.ses, z2)
+```
+
+## Holt’s linear trend method
+
+```{r}
+#fit.holt <- holt(z1, alpha=a, beta=b, initial='simple', h=3)
+fit.holt <- holt(z1, h=3)
+
+accuracy(fit.holt, z2)
+```
+
+## Holt-Winters’ seasonal method
+
+```{r}
+fit.hws.a <- hw(z1, seasonal='additive', h=3)
+fit.hws.m <- hw(z1, seasonal='multiplicative', h=3)
+
+accuracy(fit.hws.a, z2)
+
+accuracy(fit.hws.m, z2)
+
+```
+
+## `ets` function 
+
+```{r}
+## albo
+## Funkcja automatycznie wybierająca
+## najlepszy wariant ES
+fit.ets <- ets(z1)
+
+summary(fit.ets)
+
+##plot(fit)
+##summary(fit)
+##checkresiduals(fit)
+h3e <- forecast(fit.ets, h=3)
+#
+# Evaluating accuracy
+accuracy(h3e, z2)
+```
+
+## ARIMA
+     
+### Stationarity
+
+Exponential smoothing models are based on a description of the
+trend and seasonality in the data, ARIMA models aim to describe the
+autocorrelations in the data.
+
+A stationary time series is one whose properties do not depend on
+the time at which the series is observed (informal)
+
+Thus, time series with trends, or with seasonality, are not
+stationary — the trend and seasonality will a ect the value of
+the time series at di erent times. On the other hand, a white
+noise series is stationary
+
+A stationary time series will have no predictable patterns in the long-
+term (informal).
+
+
+## Differencing
+
+Computing  the differences between consecutive observations. Resulting
+series may be stationary
+
+Logarithm transformation can help to stabilise 
+the variance of a time series. 
+Differencing can stabilise the mean of a time series by removing
+changes 
+in the level of a time series, 
+and therefore eliminating (or reducing) trend and seasonality.
+
+
+The differenced series is the change between consecutive 
+observations in the
+original series, and can be written as
+
+$$y't = y_{t} - y_{t-1} $$
+
+When the differenced series is white noise, the model for the
+original series can be written as
+
+$$y_t - y_{t-1} = ε_t$$
+
+where $ε_t$ denotes white noise. 
+Rearranging this leads to the “random walk” model
+
+$$y_{t} = y_{t-1} + ε_t$$
+
+The forecasts from a random walk model are equal 
+to the last observation
+     
+Second-order differencing and Seasonal differencing
+
+```{r}
+## 
+lag <-12
+lagged_x <- diff(z, lag)
+```
+
+## Unit root tests 
+
+KPSS (Kwiatkowski-Phillips-Schmidt-Shin) test
+
+null hypothesis is that the data are stationary, and we look for
+evidence that the null hypothesis is false.
+
+unitroot_kpss() (fpp3)
+
+## Autoregressive models
+
+In an autoregression model, we forecast the variable of interest
+using a linear combination of past values of the variable:
+     
+$$y_{t} = c + φ_1 y_{t-1} + φ_2 y_{t-2} + \cdots + φ_p y_{t-p} + ε_t$$
+
+where  $ε_t$  is white noise. This is like a 
+multiple regression but with lagged values of  
+$y_t$  as predictors. 
+We refer to this as an $AR(p)$ model, an autoregressive model of order  $p$.
+
+## Autoregressive models
+
+In an autoregression model, we forecast the variable of interest
+using a linear combination of past values of the variable:
+     
+$$y_{t} = c + φ_1 y_{t-1} + φ_2 y_{t-2} + \cdots + φ_p y_{t-p} + ε_t$$
+
+where  $ε_t$  is white noise. This is like a 
+multiple regression but with lagged values of  
+$y_t$  as predictors. 
+We refer to this as an $AR(p)$ model, an autoregressive model of order  $p$.
+
+##  Moving average models
+
+$$y_{t} = c + θ_1 e_{t-1} + θ_2 e_{t-2} + \cdots + θ_q e_{t-q}$$
+
+where  $ε_t$  is white noise. We refer to this as an $MA(q)$ 
+model, a moving average model of order $q$
+
+
+## Non-seasonal ARIMA models
+
+$$y′_t = c + φ_1 y′_{t−1} + ⋯ + φ_p y′_{t−p} + θ_1 ε_{t−1} + ⋯ 
+          + θ_q ε_{t−q} + ε_t$$
+
+$y_t′$ is the differenced series; 
+$p$ = order of the AR part;
+$d$ = degree of first differencing;
+$q$ = order of the MA part.
+	
+```{r}
+## oszacowanie modelu w R
+## fit <- Arima(z, order=c(p, d, q) )
+## czyli Arima(x, c(0,0,q)) = MA(q)
+## czyli Arima(x, c(p,0,0)) = AR(p)
+##
+## or auto.arima 
+fit.arima <- auto.arima(z1)
+
+summary(fit.arima)
+
+## 
+h3a <- forecast(fit.arima, h=3)
+
+accuracy(h3a, z2)
+
+```
+

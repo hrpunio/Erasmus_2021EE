@@ -1,18 +1,37 @@
 ## -- R --
 ## Analysis of cross-cestional data
 ## 
-library("tidyverse") ## !!!!!!!!
+library("tidyverse") 
 library("caret")
- 
+library("ggfortify")
+
+
+library("car")
+head(Salaries, n=9)
+
+levels(Salaries$rank)
+levels(Salaries$discipline)
+
+##install.packages("caret")
+
 load ("marketing.rda")
  
+## 
 training.samples <- marketing$sales %>%
   createDataPartition(p=0.8, list = F)
 
 train.data <- marketing[training.samples, ]
 test.data <- marketing[ -training.samples, ]
 
+##
 plot(train.data)
+
+
+?autoplot
+autoplot(as.matrix(train.data), facet=F)
+
+## autoplot ale ts
+## https://rstudio-pubs-static.s3.amazonaws.com/325621_fe5c68d1df274c6b8b287428bb484698.html
 
 ## Simple regression
 ## sales = a + b
@@ -27,11 +46,11 @@ plot(train.data)
 # so to specify regression by origin we should type
 # sales ~ youtube - 1
 
-
+# tilde ~
 model1 <- lm(sales ~ youtube, data = train.data)
 
 # components of lm model (formally R `object`):
-names(model)
+names(model1)
 
 # summary statistics of the model are provided with the summary
 # function in R. With summary statistics, we can assess (among other
@@ -68,9 +87,11 @@ summary(model1)
 
 ## residuals
 residuals(model1)
-
+fitted(model)
 ##
 coefficients(model1)["youtube"]
+
+
 confint(model1)
 
 # sales = 8.43 + 0.048 youtube
@@ -112,8 +133,26 @@ vif(model1)
 ###### ############################
 # predictions
 
-predictions1 <- predict(model1, test.data)
-plot(predictions1)
+?predict
+
+#predictions1 <- predict(model1, test.data, interval='confidence')
+predictions1 <- predict(model1, test.data )
+
+predictions1
+
+plot(sales ~ youtube, data = train.data )
+ points (predictions1 ~ test.data$youtube, col='blue')
+ lines (predictions1 ~ test.data$youtube, col='red')
+  
+#plot(model1, which=1) 
+
+library("car")
+Salaries
+model.9 <- lm(salary ~ yrs.service + rank + discipline + sex, data=Salaries)
+summary(model.9)
+
+anova(model.9)
+
 
 ## #####################
 ## #####################
@@ -151,9 +190,11 @@ anova(model2, model1, test="F")
 #  we should prefer m.model
 
 m2.model <- lm(sales ~ youtube + facebook + newspaper, data=train.data)
+summary(m2.model)
+
 anova(m.model, m2.model, test="F") 
 
-anova(model, m.model, m2.model, test="F") 
+anova(model, model1, model2, test="F") 
 
 ## ######################
 ## more Multiple regression
