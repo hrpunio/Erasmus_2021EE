@@ -6,7 +6,8 @@ library("tidyverse")
 #library("stringr") ?
 library("ISOweek") ###
 library("knitr")
-library("eurostat")
+##
+library("eurostat") #<----
 ## Importing data
 ## you can use
 ## f <- read.csv(URL)
@@ -15,13 +16,17 @@ library("eurostat")
 ##
 ## unit = RCH_A	Annual rate of chang
 ## coicop = (All-items HICP = CP00 ; Food including alcohol and tobacco = FOOD)
-hicp <- get_eurostat("prc_hicp_manr",  stringsAsFactors = FALSE) %>%
+hicp <- get_eurostat("prc_hicp_manr", stringsAsFactors = FALSE) %>%
   mutate (time = as.character(time)) %>%
   mutate (coicop = factor(coicop)) %>%
   mutate (year = as.numeric(substr(time, 1, 4)), 
           month = as.numeric(substr(time, 6,7)),
           geo = as.factor(geo)) %>%
-  select (geo, cooicop, year, month, value=values)
+  mutate (v2 = values * values,
+          v3 = v2 * values)
+
+  #select (geo, coicop, year, month, values, v2)
+
 ## **During Rstudio session the result is catched **
 ##
 ## dplyr/tidyverse
@@ -32,10 +37,19 @@ levels(hicp$coicop)
 
 head(hicp)
 
-hicp.pl <- hicp %>% filter (geo == 'PL') %>%
+hicp.pl <- hicp %>% filter ( geo == 'PL') %>%
   filter (coicop == 'FOOD')
 
 
+
+
+
+######################################################################
+###  ### ### 
+
+
+## ###
+## 
 library("ggplot2")
 
 pf <- ggplot(hicp.pl, aes(x=as.Date(time), y=values, colour=geo)) +
@@ -44,6 +58,7 @@ pf <- ggplot(hicp.pl, aes(x=as.Date(time), y=values, colour=geo)) +
   xlab(label="") +
   ylab(label="") +
   ggtitle("HICP")
+
 pf
 
 hicp.xx <- hicp %>% filter (geo %in% c('PL', 'DE', 'IT', 'CZ')) %>%
