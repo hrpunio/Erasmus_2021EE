@@ -1,0 +1,22 @@
+## Environmental Kuznets Curve
+
+https://www.sciencedirect.com/topics/earth-and-planetary-sciences/environmental-kuznets-curve
+http://www.sterndavidi.com/Publications/EKC.pdf
+
+## EU data
+
+Greenhouse gas emissions per capita
+https://ec.europa.eu/eurostat/databrowser/view/t2020_rd300/default/table?lang=en
+
+GDP per capita in PPS
+https://ec.europa.eu/eurostat/databrowser/view/tec00114/default/table?lang=en
+https://ec.europa.eu/eurostat/databrowser/view/tec00114/default/table?lang=en
+
+https://en.wikipedia.org/wiki/Purchasing_power_parity
+
+## PPS
+
+The purchasing power standard (PPS), 
+is an artificial currency unit. 
+Theoretically, one PPS can buy the same amount 
+of goods and services in each country.
