@@ -7,7 +7,8 @@ library("knitr")
 library("lmtest")
 library("car") # D-W test
 
-###
+### check also: https://www.youtube.com/watch?v=0T0KHNqDwc4
+###  =======================
 
 ### Read all the data
 ##'NY.GDP.MKTP.KD',    = GDP constant US$ 2015
@@ -26,14 +27,16 @@ wb <- read.csv("WBdata.csv", sep = ';',  header=T, na.string="NA")
 
 ### Clean the data
 ##unwated <- c('OSS', 'LTE', 'AFW', 'LCN', 'LCD')
+## wb_groups_list.csv file contains definitions of all country-groups
+## so we can filter-out wb file using information form wb_groups_list.csv
 wb.unwanted <- read.csv("wb_groups_list.csv", 
     sep = ';',  header=T, na.string="NA")
 
-
-## Transform to _wider_ format
-## change colum names to something less complicated
-## Crossectional data: year == 2015
-## Remove small countries: year >= 1990
+## Remove country-groups: filter (! code %in% wb.unwanted$code )
+## Transform to _wider_ format: pivot_wider
+## Change colum names to something less complicated and select the columns we plan to use: select
+## Crossectional data for 2015: filter (year == 2015)
+## Remove small countries: filter (pop > 1000000)
 wbl <- wb %>% filter (! code %in% wb.unwanted$code ) %>%
   pivot_wider( names_from = indicatorcode, values_from = value) %>%
   select (countryname, code, year, 
@@ -47,13 +50,16 @@ wbl <- wb %>% filter (! code %in% wb.unwanted$code ) %>%
   filter (year == 2015) %>%
   filter  (pop > 1000000)
 
-## check sample sime:
+## check sample size:
 nrow(wbl)
 
-## scatte-plot matrix for co2, gdp, fcons, euse
+## scatter-plot matrix for co2, gdp, fcons, euse
 wbl %>% select (co2, gdp, fcons, euse, e4coal) %>% pairs()
 
-## correlation matrix for
+## print descriptive statistics for our data-set
+summary(wbl)
+
+## print correlation matrix for co2, gdp, fcons, euse, e4coal
 ## NOTE: na.omit function omits rows with NA values
 wb.corr <- wbl %>% select (co2, gdp, fcons, euse, e4coal) %>% 
   na.omit() %>% cor()
